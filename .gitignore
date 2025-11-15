@@ -1,0 +1,5 @@
+bin/
+build-debug/
+build-release/
+src/inject/
+bin/inject.exe
