@@ -19,7 +19,7 @@
     ],
     "C_Cpp.default.defines": [
         "NOMINMAX",
-        "LUGO_DLL"
+        "WIN32_LEAN_AND_MEAN"
     ],
     "files.associations": {
         "algorithm": "cpp",

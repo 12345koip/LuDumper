@@ -17,6 +17,8 @@ Forked for the LuGo dumper.
 #include <memory>
 #include <functional>
 
+#define INT3 0xCC
+
 namespace LuDumper {
     namespace Dissassembler {
         struct CsOperand {
@@ -46,7 +48,8 @@ namespace LuDumper {
             public:
                 bool HasInstruction(const std::string_view& mnemonic, const std::string_view& operandPattern, bool fuzzy = false) const;
                 const AsmInstruction* GetInstructionWhichMatches(const std::string_view& mnemonic, const std::string_view& operandPattern, bool fuzzy = false) const;
-                std::vector<AsmInstruction*> GetAllInstructionsWhichMatch(const std::string_view& mnemonic, const std::string_view& operandPattern, bool fuzzy = false);
+                std::vector<const AsmInstruction*> GetAllInstructionsWhichMatch(const std::string_view& mnemonic, const std::string_view& operandPattern, bool fuzzy = false) const;
+                std::vector<LuDumper::Dissassembler::AsmInstruction>::const_iterator GetInstructionPosition(const std::string_view& mnemonic, const std::string_view& operandPattern, bool fuzzy = false) const;
 
                 inline auto begin() const {return this->instructions.begin();}
                 inline auto end() const {return this->instructions.end();}
@@ -79,6 +82,7 @@ namespace LuDumper {
                 std::optional<InstructionList> Dissassemble(const void* start, const void* end, bool detail = false) const;
 
                 void* GetFunctionStart(void* midFuncInstAddress, void* moduleBase) const;
+                uint8_t* GetNextRET(uint8_t* address) const;
                 void ForEach(const uint8_t* start, const uint8_t* end, const std::function<void(AsmInstruction&)>& callback) const;
                 std::optional<void*> RelativeLeaToRuntimeAddress(const AsmInstruction& insn) const;
         };

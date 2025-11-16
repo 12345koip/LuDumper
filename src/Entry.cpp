@@ -8,6 +8,10 @@ See LICENSE and README for details.
 
 #include <windows.h>
 #include <thread>
+#include "Dumpers/DumperBase.hpp"
+#include "Dumpers/LuaState/LuaState.hpp"
+
+using namespace LuDumper::Dumpers;
 
 static void InitConsole() {
     BOOL r = AllocConsole();
@@ -25,6 +29,10 @@ static void InitConsole() {
 
 void Entry() {
     InitConsole();
+
+    //dump lua state.
+    LuaStateDumper luaStateDumper;
+    luaStateDumper.Scan();
 
     //temporary keepalive.
     while (true)

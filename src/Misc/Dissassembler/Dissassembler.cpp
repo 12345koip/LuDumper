@@ -12,10 +12,53 @@ See LICENSE and README for details.
 #include <Windows.h>
 using namespace LuDumper::Dissassembler;
 
+
+static bool MatchWithWildcards(std::string_view text, std::string_view pattern) {
+    size_t i = 0, j = 0;
+
+    while (i < text.size() && j < pattern.size()) {
+        //skip whitespace
+        while (i < text.size() && static_cast<uint8_t>(text[i]) <= ' ') ++i;
+        while (j < pattern.size() && static_cast<uint8_t>(pattern[j]) <= ' ') ++j;
+
+        if (j + 1 < pattern.size() && pattern[j] == '?' && pattern[j + 1] == '?') {
+            //wildcard for two hex chars
+            if (i + 1 >= text.size())
+                return false;
+            else if (!std::isxdigit(static_cast<unsigned char>(text[i])) || !std::isxdigit(static_cast<unsigned char>(text[i + 1])))
+                return false;
+
+            i += 2;
+            j += 2;
+            continue;
+        }
+
+        if (pattern[j] == '?') {
+            ++i;
+            ++j;
+            continue;
+        }
+
+        //case-insensitive literal match
+        uint8_t a = text[i], b = pattern[j];
+        if ((a | 0x20) != (b | 0x20)) return false;
+
+        ++i;
+        ++j;
+    }
+
+    // skip trailing whitespace
+    while (i < text.size() && static_cast<unsigned char>(text[i]) <= ' ') ++i;
+    while (j < pattern.size() && static_cast<unsigned char>(pattern[j]) <= ' ') ++j;
+
+    return i == text.size() && j == pattern.size();
+}
+
+
 bool InstructionList::HasInstruction(const std::string_view& mnemonic, const std::string_view& operandPattern, bool fuzzy) const {
     for (const AsmInstruction& instruction: this->instructions) {
         if (instruction.mnemonic != mnemonic) continue;
-        bool isValid = fuzzy? (instruction.operands.find(operandPattern) != std::string::npos): (instruction.operands == operandPattern);
+        bool isValid = fuzzy? (instruction.operands.find(operandPattern) != std::string::npos): MatchWithWildcards(instruction.operands, operandPattern);
     
         if (isValid) return true;
     }
@@ -23,12 +66,12 @@ bool InstructionList::HasInstruction(const std::string_view& mnemonic, const std
     return false;
 }
 
-std::vector<AsmInstruction*> InstructionList::GetAllInstructionsWhichMatch(const std::string_view& mnemonic, const std::string_view& operandPattern, bool fuzzy) {
-    std::vector<AsmInstruction*> results;
+std::vector<const AsmInstruction*> InstructionList::GetAllInstructionsWhichMatch(const std::string_view& mnemonic, const std::string_view& operandPattern, bool fuzzy) const {
+    std::vector<const AsmInstruction*> results;
 
-    for (AsmInstruction& instruction: this->instructions) {
+    for (const AsmInstruction& instruction: this->instructions) {
         if (instruction.mnemonic != mnemonic) continue;
-        bool valid = fuzzy? (instruction.operands.find(operandPattern) != std::string::npos): (instruction.operands == operandPattern);
+        bool valid = fuzzy? (instruction.operands.find(operandPattern) != std::string::npos): MatchWithWildcards(instruction.operands, operandPattern);
 
         if (valid) results.push_back(&instruction);
     }
@@ -39,13 +82,28 @@ std::vector<AsmInstruction*> InstructionList::GetAllInstructionsWhichMatch(const
 const AsmInstruction* InstructionList::GetInstructionWhichMatches(const std::string_view& mnemonic, const std::string_view& operandPattern, bool fuzzy) const {
     for (const AsmInstruction& instruction: this->instructions) {
         if (instruction.mnemonic != mnemonic) continue;
-        bool valid = fuzzy? (instruction.operands.find(operandPattern) != std::string::npos): (instruction.operands == operandPattern);
+        bool valid = fuzzy? (instruction.operands.find(operandPattern) != std::string::npos):
+            MatchWithWildcards(instruction.operands, operandPattern);
         
         if (valid) return &instruction;
     }
 
     return nullptr;
 }
+
+std::vector<LuDumper::Dissassembler::AsmInstruction>::const_iterator InstructionList::GetInstructionPosition(const std::string_view& mnemonic, const std::string_view& operandPattern, bool fuzzy) const {
+    for (auto it = this->instructions.begin(); it != this->instructions.end(); ++it) {
+        if (it->mnemonic != mnemonic) continue;
+
+        bool valid = fuzzy? (it->operands.find(operandPattern) != std::string::npos):
+            MatchWithWildcards(it->operands, operandPattern);
+        
+        if (valid) return it;
+    }
+
+    return this->instructions.end();
+}
+
 
 
 Dissassembler& Dissassembler::GetSingleton() {
@@ -149,7 +207,7 @@ std::optional<InstructionList> Dissassembler::Dissassemble(const void* start, co
     return InstructionList(std::move(decoded));
 }
 
-inline bool isMemoryReadable(void* address) {
+static inline bool isMemoryReadable(void* address) {
     MEMORY_BASIC_INFORMATION mbi{};
 
     if (VirtualQuery(address, &mbi, sizeof(mbi))) {
@@ -169,7 +227,7 @@ inline bool isMemoryReadable(void* address) {
 void* Dissassembler::GetFunctionStart(void* midFuncInstAddress, void* moduleBase) const {
     uint8_t* ptr = static_cast<uint8_t*>(midFuncInstAddress);
 
-    while (ptr-- && *ptr != 0xCC && *(ptr - 1) != 0xCC) {
+    while (ptr-- && *ptr != INT3 && *(ptr - 1) != INT3) {
         _mm_pause();
     }
 
@@ -187,4 +245,11 @@ std::optional<void*> Dissassembler::RelativeLeaToRuntimeAddress(const AsmInstruc
     uintptr_t resolved = rip + source->disp;
 
     return reinterpret_cast<void*>(resolved);
+}
+
+uint8_t* Dissassembler::GetNextRET(uint8_t* address) const {
+    while (*address != 0xC3 && *address != 0xCA && *address != 0xC2)
+        address++;
+
+    return address;
 }

@@ -21,6 +21,7 @@ endforeach()
 add_library(LU_DUMPER SHARED
     src/Entry.cpp
     src/Misc/Dissassembler/Dissassembler.cpp
+    src/Dumpers/LuaState/LuaState.cpp
 )
 
 
