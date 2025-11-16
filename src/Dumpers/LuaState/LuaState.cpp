@@ -40,6 +40,7 @@ void LuaStateDumper::Scan() {
 
         //all the matching instructions for moves into offsets in the Lua state.
         //A lot of offsets come just from these given the initialisation order.
+        puts("Finding instruction: \"mov qword ptr [rdi + 0x??], rax\"");
         const auto allMoves = instructionList.GetAllInstructionsWhichMatch("mov", "qword ptr [rdi + 0x??], rax", false);
 
         /*
@@ -49,11 +50,25 @@ void LuaStateDumper::Scan() {
         3 - assignment of stack
         4 - assignment of base
         */
+
+        puts("Dumping fields...");
+        const LuaStateField fields[4] = {LuaStateField::base_ci, LuaStateField::end_ci, LuaStateField::stack, LuaStateField::base};
+        for (int i = 0; i < 4; ++i) {
+            auto& op = allMoves[i];
+            auto offset = op->detail[0]->disp;
+            log_offset(LuaStateFieldToString(fields[i]), offset);
+            this->offsets.emplace(fields[i], offset);
+        }
+
+        //L->top is exposed by L->top++
+        puts("Finding instruction: \"add qword ptr [rdi + 0x??], 0x10");
+
+        const auto incrTopInsn = instructionList.GetInstructionWhichMatches("add", "qword ptr [rdi + 0x??], 0x10", false);
+        auto offset_incrTop = incrTopInsn->detail[0]->disp;
+        log_offset(LuaStateFieldToString(LuaStateField::top), offset_incrTop);
+        this->offsets.emplace(LuaStateField::top, offset_incrTop);
+
         
-        auto& base_ci_op = allMoves[0];
-        auto base_ci_offset = base_ci_op->detail[0]->disp;
-        log_offset("base_ci", base_ci_offset);
-        this->offsets.emplace(LuaStateField::base_ci, base_ci_offset);
     }
 }
 

@@ -19,7 +19,7 @@ See LICENSE and README for details.
 
 #define l_memberAOB static inline constexpr const char*
 #define fail(msg) {puts("failure: " msg); return;}
-#define log_offset(offsetStr, offset) printf(offsetStr " @ +0x%03" PRIx64 "\n", offset)
+#define log_offset(offsetStr, offset) printf("%s @ +0x%03" PRIx64 "\n", offsetStr, offset)
 
 namespace LuDumper {
     namespace Dumpers {
