@@ -13,43 +13,61 @@ See LICENSE and README for details.
 using namespace LuDumper::Dissassembler;
 
 
-static bool MatchWithWildcards(std::string_view text, std::string_view pattern) {
+static __forceinline std::string removeHexPrefix(std::string_view rawstr) {
+    std::string out;
+    out.reserve(rawstr.size());
+
+    for (size_t i = 0; i < rawstr.size();) {
+        if (i + 1 < rawstr.size() && rawstr[i] == '0' && rawstr[i + 1] == 'x') { //skip "0x" prefix.
+            i += 2;
+            continue;
+        }
+        out.push_back(rawstr[i]);
+        ++i;
+    }
+    return out;
+}
+
+static bool MatchWithWildcards(std::string_view rawtext, std::string_view rawpattern) {
+    std::string text = removeHexPrefix(rawtext);
+    std::string pattern = removeHexPrefix(rawpattern);
+
     size_t i = 0, j = 0;
 
     while (i < text.size() && j < pattern.size()) {
-        //skip whitespace
-        while (i < text.size() && static_cast<uint8_t>(text[i]) <= ' ') ++i;
-        while (j < pattern.size() && static_cast<uint8_t>(pattern[j]) <= ' ') ++j;
-
+        //"??" = match run of hex digits
         if (j + 1 < pattern.size() && pattern[j] == '?' && pattern[j + 1] == '?') {
-            //wildcard for two hex chars
-            if (i + 1 >= text.size())
-                return false;
-            else if (!std::isxdigit(static_cast<unsigned char>(text[i])) || !std::isxdigit(static_cast<unsigned char>(text[i + 1])))
+            if (i >= text.size() || !std::isxdigit(static_cast<unsigned char>(text[i])))
                 return false;
 
-            i += 2;
+            //at least one hex digit should be consumed.
+            do
+                ++i;
+            while (i < text.size() && std::isxdigit(static_cast<unsigned char>(text[i])));
+
             j += 2;
             continue;
         }
 
+        //single '?' = match any single char
         if (pattern[j] == '?') {
             ++i;
             ++j;
             continue;
         }
 
-        //case-insensitive literal match
-        uint8_t a = text[i], b = pattern[j];
-        if ((a | 0x20) != (b | 0x20)) return false;
+        unsigned char a = static_cast<unsigned char>(text[i]);
+        unsigned char b = static_cast<unsigned char>(pattern[j]);
+        if ((a | 0x20) != (b | 0x20))
+            return false;
 
         ++i;
         ++j;
     }
 
-    // skip trailing whitespace
-    while (i < text.size() && static_cast<unsigned char>(text[i]) <= ' ') ++i;
-    while (j < pattern.size() && static_cast<unsigned char>(pattern[j]) <= ' ') ++j;
+    //skip trailing spaces
+    while (i < text.size() && std::isspace(static_cast<unsigned char>(text[i]))) ++i;
+    while (j < pattern.size() && std::isspace(static_cast<unsigned char>(pattern[j]))) ++j;
 
     return i == text.size() && j == pattern.size();
 }

@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Roblox Studio",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "C:\\Users\\${env:USERNAME}\\AppData\\Local\\Roblox\\Versions\\version-874602c66c70451a\\RobloxStudioBeta.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "integratedTerminal"
+        },
+    ]
+}
