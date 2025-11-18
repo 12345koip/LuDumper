@@ -108,7 +108,7 @@ void LuaStateDumper::Scan() {
         //function bounds
         uint8_t* start = reinterpret_cast<uint8_t*>(luaE_newthread_match.get());
         uint8_t* end = reinterpret_cast<uint8_t*>(
-            reinterpret_cast<uintptr_t>(start) + 0x100
+            reinterpret_cast<uintptr_t>(start) + 0x110
         );
         
         const auto instructionList = *Dissassembler.Dissassemble(start, end, true);
@@ -126,6 +126,48 @@ void LuaStateDumper::Scan() {
         const auto markedOffset = markedPos->detail[0]->disp;
         log_offset(LuaStateFieldToString(LuaStateField::marked), markedOffset);
         this->offsets.emplace(LuaStateField::marked, markedOffset);
+
+        //L->global is exposed by the copy insn
+        log_search("mov qword ptr [rax + 0x??], rcx");
+        const auto gcpyInsn = instructionList.GetInstructionWhichMatches("mov", "qword ptr [rax + 0x??], rcx");
+        const auto gOffset = gcpyInsn->detail[0]->disp;
+        log_offset(LuaStateFieldToString(LuaStateField::global), gOffset);
+        this->offsets.emplace(LuaStateField::global, gOffset);
+
+        //activememcat is exposed when it is copied from the main thread, as is gt.
+
+        //singlestep is exposed by a similar one.
+        log_search("mov byte ptr [rbx + 0x??], al");
+        const auto allMovByteAl = instructionList.GetAllInstructionsWhichMatch("mov", "byte ptr [rbx + 0x??], al");
+        const LuaStateField byteAlFields[2] = {LuaStateField::activememcat, LuaStateField::singlestep};
+
+        for (int i = 0; i < allMovByteAl.size(); ++i) {
+            auto field = byteAlFields[i];;
+            auto& ins = allMovByteAl[i];
+            auto rOffset = ins->detail[0]->disp;
+            log_offset(LuaStateFieldToString(field), rOffset);
+            this->offsets.emplace(field, rOffset);
+        }
+
+        log_search("mov qword ptr [rbx + 0x??], rax");
+        const auto allMovQRbx = instructionList.GetAllInstructionsWhichMatch("mov", "qword ptr [rbx + 0x??], rax");
+        const auto gtCpyIns = *(allMovQRbx.end() - 1);
+        const auto gtOffset = gtCpyIns->detail[0]->disp;
+        log_offset(LuaStateFieldToString(LuaStateField::gt), gtOffset);
+        this->offsets.emplace(LuaStateField::gt, gtOffset);
+
+        //singlestep is exposed when it is copied from the main thread.
+        // log_search("mov byte ptr [rbx + 0x??], rax");
+        // const auto allMovBRbx = instructionList.GetAllInstructionsWhichMatch("mov", "byte ptr [rbx + 0x??], rax");
+        // const auto singlestepIns = *(allMovBRbx.end() - 1);
+        // const auto singlestepOffset = singlestepIns->detail[0]->disp;
+        // log_offset(LuaStateFieldToString(LuaStateField::singlestep), singlestepOffset);
+
+        // log_search("mov byte ptr [rbx + 0x??], al");
+        // const auto activememcatIns = instructionList.GetInstructionWhichMatches("mov", "byte ptr [rbx + 0x??], al");
+        // const auto amcOffset = activememcatIns->detail[0]->disp;
+        // log_offset(LuaStateFieldToString(LuaStateField::activememcat), amcOffset);
+        // this->offsets.emplace(LuaStateField::activememcat, amcOffset);
     }
 }
 
