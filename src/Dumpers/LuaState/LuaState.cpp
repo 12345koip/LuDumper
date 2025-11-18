@@ -42,11 +42,12 @@ void LuaStateDumper::Scan() {
         const auto allMoves = instructionList.GetAllInstructionsWhichMatch("mov", "qword ptr [rdi + 0x??], rax", false);
 
         /*
-        From this, we should get 4 matches:
+        From this, we should get 5 matches:
         1 - assignment of base_ci
-        2 - assignment of end_ci
-        3 - assignment of stack
-        4 - assignment of base
+        2 - assignment of ci
+        3 - assignment of end_ci
+        4 - assignment of stack
+        5 - assignment of base
         */
 
         const LuaStateField fields[5] = {LuaStateField::base_ci, LuaStateField::ci, LuaStateField::end_ci, LuaStateField::stack, LuaStateField::base};
@@ -74,7 +75,7 @@ void LuaStateDumper::Scan() {
 
         //L->size_ci is exposed by the constant 8, which is the expansion of BASIC_CI_SIZE
         log_search("mov dword ptr [rdi + 0x??], 8");
-        const auto bscCiSzIns = instructionList.GetInstructionWhichMatches("mov", "dword ptr [rdi + 0x??], 8");
+        const auto bscCiSzIns = instructionList.GetInstructionWhichMatches("mov", "dword ptr [rdi + 0x??], 8", false);
         const auto ciSzOffset = bscCiSzIns->detail[0]->disp;
         log_offset(LuaStateFieldToString(LuaStateField::size_ci), ciSzOffset);
         this->offsets.emplace(LuaStateField::size_ci, ciSzOffset);
@@ -82,10 +83,49 @@ void LuaStateDumper::Scan() {
 
         //stack_last is exposed by the single rcx mov
         log_search("mov qword ptr [rdi + 0x??], rcx");
-        const auto stackLastInsn = instructionList.GetInstructionWhichMatches("mov", "qword ptr [rdi + 0x??], rcx");
+        const auto stackLastInsn = instructionList.GetInstructionWhichMatches("mov", "qword ptr [rdi + 0x??], rcx", false);
         const auto stackLastOffset = stackLastInsn->detail[0]->disp;
         log_offset(LuaStateFieldToString(LuaStateField::stack_last), stackLastOffset);
         this->offsets.emplace(LuaStateField::stack_last, stackLastOffset);
+
+        //memcat is exposed by the first call to luaM_new_, it's in r8d.
+        log_search("movzx r8d, byte ptr [rcx + 0x??]");
+        const auto memcatInsn = instructionList.GetInstructionWhichMatches("movzx", "r8d, byte ptr [rcx + 0x??]", false);
+        const auto memcatOffset = memcatInsn->detail[1]->disp;
+        log_offset(LuaStateFieldToString(LuaStateField::memcat), memcatOffset);
+        this->offsets.emplace(LuaStateField::memcat, memcatOffset);
+    }
+
+    { //luaE_newthread
+        puts("Scanning for luaE_newthread...");
+
+        //get stack_init disasm.
+        auto luaE_newthread_match = hat::find_pattern(luaE_newthread_signature, ".text");
+        if (!luaE_newthread_match.has_result()) fail("luaE_newthread");
+
+        printf("luaE_newthread @ %p\n", luaE_newthread_match.get());
+
+        //function bounds
+        uint8_t* start = reinterpret_cast<uint8_t*>(luaE_newthread_match.get());
+        uint8_t* end = reinterpret_cast<uint8_t*>(
+            reinterpret_cast<uintptr_t>(start) + 0x100
+        );
+        
+        const auto instructionList = *Dissassembler.Dissassemble(start, end, true);
+
+        //L->tt is exposed when it is set to 9 (LUA_TTHREAD)
+        log_search("mov byte ptr [rax], 9");
+        const auto ttIns = instructionList.GetInstructionWhichMatches("mov", "byte ptr [rax], 9");
+        const auto ttOffset = ttIns->detail[1]->disp;
+        log_offset(LuaStateFieldToString(LuaStateField::tt), ttOffset);
+        this->offsets.emplace(LuaStateField::tt, ttOffset);
+
+        //L->marked is exposed by currentwhite & 3
+        log_search("and r8b, 3");
+        const auto markedPos = instructionList.GetInstructionPosition("and", "r8b, 3", false) + 1;
+        const auto markedOffset = markedPos->detail[0]->disp;
+        log_offset(LuaStateFieldToString(LuaStateField::marked), markedOffset);
+        this->offsets.emplace(LuaStateField::marked, markedOffset);
     }
 }
 
