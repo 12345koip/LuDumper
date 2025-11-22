@@ -8,6 +8,7 @@ See LICENSE and README for details.
 
 #include "LuaState.hpp"
 using namespace LuDumper::Dumpers;
+using namespace LuDumper::Dissassembler;
 
 void LuaStateDumper::Scan() {
     puts("Dumping Lua state...");
@@ -17,6 +18,8 @@ void LuaStateDumper::Scan() {
     //signatures.
     const auto stack_init_signature = hat::parse_signature(stack_init).value();
     const auto luaE_newthread_signature = hat::parse_signature(luaE_newthread).value();
+    const auto lua_newthread_signature = hat::parse_signature(lua_newthread).value();
+    const auto luaV_gettable_signature = hat::parse_signature(luaV_gettable).value();
 
 
     { //stack_init
@@ -142,7 +145,7 @@ void LuaStateDumper::Scan() {
         const LuaStateField byteAlFields[2] = {LuaStateField::activememcat, LuaStateField::singlestep};
 
         for (int i = 0; i < allMovByteAl.size(); ++i) {
-            auto field = byteAlFields[i];;
+            auto field = byteAlFields[i];
             auto& ins = allMovByteAl[i];
             auto rOffset = ins->detail[0]->disp;
             log_offset(LuaStateFieldToString(field), rOffset);
@@ -155,19 +158,79 @@ void LuaStateDumper::Scan() {
         const auto gtOffset = gtCpyIns->detail[0]->disp;
         log_offset(LuaStateFieldToString(LuaStateField::gt), gtOffset);
         this->offsets.emplace(LuaStateField::gt, gtOffset);
+    }
 
-        //singlestep is exposed when it is copied from the main thread.
-        // log_search("mov byte ptr [rbx + 0x??], rax");
-        // const auto allMovBRbx = instructionList.GetAllInstructionsWhichMatch("mov", "byte ptr [rbx + 0x??], rax");
-        // const auto singlestepIns = *(allMovBRbx.end() - 1);
-        // const auto singlestepOffset = singlestepIns->detail[0]->disp;
-        // log_offset(LuaStateFieldToString(LuaStateField::singlestep), singlestepOffset);
+    { //lua_newthread
+        puts("Scanning for lua_newthread...");
+        auto lua_newthread_match = hat::find_pattern(lua_newthread_signature, ".text");
+        if (!lua_newthread_match.has_result()) fail("lua_newthread");
 
-        // log_search("mov byte ptr [rbx + 0x??], al");
-        // const auto activememcatIns = instructionList.GetInstructionWhichMatches("mov", "byte ptr [rbx + 0x??], al");
-        // const auto amcOffset = activememcatIns->detail[0]->disp;
-        // log_offset(LuaStateFieldToString(LuaStateField::activememcat), amcOffset);
-        // this->offsets.emplace(LuaStateField::activememcat, amcOffset);
+        printf("lua_newthread @ %p\n", lua_newthread_match.get());
+        uint8_t* start = reinterpret_cast<uint8_t*>(lua_newthread_match.get());
+        uint8_t* end = reinterpret_cast<uint8_t*>(
+            reinterpret_cast<uintptr_t>(start) + 0x80
+        );
+
+        auto instructionList = *Dissassembler.Dissassemble(start, end, true);
+
+        //L->gclist is exposed in the call to luaC_barrierback. We can look backwards
+        //from the second call to the first lea - this exposes the offset.
+        log_search("call 0x??");
+        const auto allCalls = instructionList.GetAllInstructionsWhichMatch("call", "", true);
+        const auto& secondCall = allCalls[1];
+        const auto secondCallPos = std::find(instructionList.begin(), instructionList.end(), secondCall);
+
+        log_search("lea ..., [... + 0x??]");
+        const AsmInstruction* lastLeaIns;
+        for (int i = 0; i < 5; ++i) {
+            auto ins = secondCallPos - i;
+
+            if (ins->mnemonic == "lea") {
+                //i have many regrets.
+                lastLeaIns = &(*ins);
+            }
+        }
+
+        const auto gclistOffset = lastLeaIns->detail[1]->disp;
+        log_offset(LuaStateFieldToString(LuaStateField::gclist), gclistOffset);
+        this->offsets.emplace(LuaStateField::gclist, gclistOffset);
+    }
+
+    { //luaV_gettable
+    puts("Scanning for luaV_gettable...");
+        auto luaV_gettable_match = hat::find_pattern(luaV_gettable_signature, ".text");
+        if (!luaV_gettable_match.has_result()) fail("luaV_gettable");
+
+        printf("luaV_gettable @ %p\n", luaV_gettable_match.get());
+        uint8_t* start = reinterpret_cast<uint8_t*>(luaV_gettable_match.get());
+        uint8_t* end = reinterpret_cast<uint8_t*>(
+            reinterpret_cast<uintptr_t>(start) + 0x80
+        );
+
+        auto instructionList = *Dissassembler.Dissassemble(start, end, true);
+
+        //L->cachedslot is exposed in the assignment L->cachedslot = gval2slot(h, res)
+        //we'll go from the first call instruction (luaH_get) and walk forwards until
+        //we find a matching mov.
+
+        log_search("call 0x??");
+        const auto call = instructionList.GetInstructionWhichMatches("call", "", true);
+        const auto callPos = std::find(instructionList.begin(), instructionList.end(), call);
+        log_search("mov dword ptr [... + 0x??], ...");
+
+        const AsmInstruction* cachedslotMov;
+        for (int i = 0; i < 10; ++i) {
+            auto ins = callPos + i;
+
+            if (ins->id == X86_INS_MOV && ins->operands.find("dword ptr [") != std::string::npos) {
+                cachedslotMov = &(*ins);
+                break;
+            }
+        }
+        
+        const auto cachedslotOffset = cachedslotMov->detail[0]->disp;
+        log_offset(LuaStateFieldToString(LuaStateField::cachedslot), cachedslotOffset);
+        this->offsets.emplace(LuaStateField::cachedslot, cachedslotOffset);
     }
 }
 

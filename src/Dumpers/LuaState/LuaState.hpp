@@ -40,7 +40,7 @@ namespace LuDumper {
             userdata
         };
 
-        constexpr const char* LuaStateFieldToString(LuaStateField field) {
+        constexpr const char* LuaStateFieldToString(const LuaStateField field) {
             switch (field) {
                 case LuaStateField::tt:           return "tt";
                 case LuaStateField::marked:       return "marked";
@@ -76,6 +76,8 @@ namespace LuDumper {
             private:
                 l_memberAOB stack_init = "48 89 5C 24 08 57 48 83 EC 20 44 0F B6 41 02 48 8B DA 48 8B F9 BA 40 01 00 00 48 8B CB E8 ?? ?? ?? ??";
                 l_memberAOB luaE_newthread = "48 89 5C 24 ?? 57 48 83 EC ?? 44 0F B6 41 ?? BA ?? ?? ?? ?? 48 8B F9 E8 ?? ?? ?? ?? 48 8B 57 ?? 48 8B D8 44 0F B6 42 ?? C6 00 ?? 41 80 E0 ?? 44 88 40 ??";
+                l_memberAOB lua_newthread = "48 89 5c 24 ?? 57 48 83 ec ?? 48 8b 51 ?? 48 8b d9 48 8b 42 ?? 48 39 42 ?? 72 ?? b2 ?? e8 ?? ?? ?? ?? f6 43 ?? ?? 74 ?? 4c 8d 43 ?? 48 8b d3 48 8b cb e8 ?? ?? ?? ?? 48 8b cb e8 ?? ?? ?? ?? 48 8b 4b ?? 48 8b f8 48 89 01 c7 41 ?? ?? ?? ?? ?? 48 83 43 ?? ??";
+                l_memberAOB luaV_gettable = "48 89 5c 24 ?? 55 41 54 41 55 41 56 41 57 48 83 ec ?? 48 89 74 24 ?? 4c 8d 2d ?? ?? ?? ?? 48 89 7c 24 ?? 4d 8b e1 4d 8b f8 48 8b da 4c 8b f1 33 ed 83 7b ?? ?? 75 ?? 48 8b 33 49 8b d7 48 8b ce e8 ?? ?? ?? ?? 48 8b f8 49 3b c5 74 ?? 48 8b c8 48 2b 4e ?? 48 c1 f9 ?? 41 89 4e ?? 83 78 ?? ?? 75 ?? 48 8b 4e ?? 48 85 c9 74 ?? f6 41 ?? ?? 75 ?? 4d 8b 46 ??";
 
             public:
                 std::string ToHeaderContents() const override;

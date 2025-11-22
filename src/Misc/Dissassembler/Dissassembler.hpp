@@ -39,6 +39,8 @@ namespace LuDumper {
             std::vector<std::shared_ptr<CsOperand>> detail;
             AsmInstruction(const std::string_view& mn, const std::string_view& op, uintptr_t add, uint64_t sz, std::vector<uint8_t> bytes, std::vector<std::shared_ptr<CsOperand>> detail, x86_insn id):
                 mnemonic(mn), operands(op), address(add), size(sz), bytes(std::move(bytes)), detail(std::move(detail)), id(id) {}
+            
+            bool operator==(const AsmInstruction* other) const noexcept;
         };
 
         class InstructionList {

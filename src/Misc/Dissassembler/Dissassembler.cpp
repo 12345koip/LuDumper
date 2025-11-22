@@ -13,6 +13,17 @@ See LICENSE and README for details.
 using namespace LuDumper::Dissassembler;
 
 
+bool AsmInstruction::operator==(const AsmInstruction* other) const noexcept {
+    return this->mnemonic == other->mnemonic &&
+        this->operands == other->operands &&
+        this->address == other->address &&
+        this->size == other->size &&
+        this->id == other->id &&
+        this->bytes == other->bytes &&
+        this->detail == other->detail;
+}
+
+
 static __forceinline std::string removeHexPrefix(std::string_view rawstr) {
     std::string out;
     out.reserve(rawstr.size());
