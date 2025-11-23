@@ -20,6 +20,7 @@ void LuaStateDumper::Scan() {
     const auto luaE_newthread_signature = hat::parse_signature(luaE_newthread).value();
     const auto lua_newthread_signature = hat::parse_signature(lua_newthread).value();
     const auto luaV_gettable_signature = hat::parse_signature(luaV_gettable).value();
+    const auto luaD_call_signature = hat::parse_signature(luaD_call).value();
 
 
     { //stack_init
@@ -197,7 +198,7 @@ void LuaStateDumper::Scan() {
     }
 
     { //luaV_gettable
-    puts("Scanning for luaV_gettable...");
+        puts("Scanning for luaV_gettable...");
         auto luaV_gettable_match = hat::find_pattern(luaV_gettable_signature, ".text");
         if (!luaV_gettable_match.has_result()) fail("luaV_gettable");
 
@@ -231,6 +232,59 @@ void LuaStateDumper::Scan() {
         const auto cachedslotOffset = cachedslotMov->detail[0]->disp;
         log_offset(LuaStateFieldToString(LuaStateField::cachedslot), cachedslotOffset);
         this->offsets.emplace(LuaStateField::cachedslot, cachedslotOffset);
+    }
+
+
+    { //luaD_call
+        puts("Scanning for luaD_call...");
+
+        //get luaD_call disasm.
+        auto luaD_call_match = hat::find_pattern(luaD_call_signature, ".text");
+        if (!luaD_call_match.has_result()) fail("luaD_call");
+
+        printf("luaD_call @ %p\n", luaD_call_match.get());
+
+        //bounds of function
+        uint8_t* start = reinterpret_cast<uint8_t*>(luaD_call_match.get());
+        uint8_t* end = reinterpret_cast<uint8_t*>(
+            reinterpret_cast<uintptr_t>(start) + 0x195
+        );
+        
+        const auto instructionList = *Dissassembler.Dissassemble(start, end, true);
+
+
+
+        //L->nCcalls is exposed when it is accessed at the start of the function for
+        //whether or not to call luaD_checkCstack. It's the first movzx.
+        log_search("movzx ..., word ptr [rcx + 0x??]");
+        const auto first_movzx = instructionList.GetInstructionWhichMatches("movzx", "word ptr [rcx +", true);
+        const auto nCcalls_offset = first_movzx->detail[1]->disp;
+        log_offset(LuaStateFieldToString(LuaStateField::nCcalls), nCcalls_offset);
+        this->offsets.emplace(LuaStateField::nCcalls, nCcalls_offset);
+
+
+        //L->baseCcalls is exposed when it is incremented in a C closure block.
+        log_search("inc word ptr [?? + 0x??]");
+        const auto inc_baseCcalls = instructionList.GetInstructionWhichMatches("inc", "word ptr [", true);
+        const auto baseCcalls_offset = inc_baseCcalls->detail[0]->disp;
+        log_offset(LuaStateFieldToString(LuaStateField::baseCcalls), baseCcalls_offset);
+        this->offsets.emplace(LuaStateField::baseCcalls, baseCcalls_offset);
+
+        //L->status is exposed when it is read before comparison against LUA_YIELD and LUA_BREAK.
+        //L->isactive is exposed when it is stored before new active flag is set.
+        //both use movzx byte ptr.
+        log_search("movzx byte ptr [... + 0x??]");
+        const auto all_movzx_byte_ptr = instructionList.GetAllInstructionsWhichMatch("movzx", "byte ptr [", true);
+        
+        const AsmInstruction* isactiveIns = all_movzx_byte_ptr[0];
+        const auto isactiveOffset = isactiveIns->detail[1]->disp;
+        log_offset(LuaStateFieldToString(LuaStateField::isactive), isactiveOffset);
+        this->offsets.emplace(LuaStateField::isactive, isactiveOffset);
+
+        const AsmInstruction* statusIns = all_movzx_byte_ptr[1];
+        const auto statusOffset = statusIns->detail[1]->disp;
+        log_offset(LuaStateFieldToString(LuaStateField::status), statusOffset);
+        this->offsets.emplace(LuaStateField::status, statusOffset);
     }
 }
 
