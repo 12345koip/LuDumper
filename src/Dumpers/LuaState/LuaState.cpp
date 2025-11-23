@@ -21,6 +21,7 @@ void LuaStateDumper::Scan() {
     const auto lua_newthread_signature = hat::parse_signature(lua_newthread).value();
     const auto luaV_gettable_signature = hat::parse_signature(luaV_gettable).value();
     const auto luaD_call_signature = hat::parse_signature(luaD_call).value();
+    const auto luaD_reallocstack_signature = hat::parse_signature(luaD_reallocstack).value();
 
 
     { //stack_init
@@ -98,67 +99,6 @@ void LuaStateDumper::Scan() {
         const auto memcatOffset = memcatInsn->detail[1]->disp;
         log_offset(LuaStateFieldToString(LuaStateField::memcat), memcatOffset);
         this->offsets.emplace(LuaStateField::memcat, memcatOffset);
-    }
-
-    { //luaE_newthread
-        puts("Scanning for luaE_newthread...");
-
-        //get stack_init disasm.
-        auto luaE_newthread_match = hat::find_pattern(luaE_newthread_signature, ".text");
-        if (!luaE_newthread_match.has_result()) fail("luaE_newthread");
-
-        printf("luaE_newthread @ %p\n", luaE_newthread_match.get());
-
-        //function bounds
-        uint8_t* start = reinterpret_cast<uint8_t*>(luaE_newthread_match.get());
-        uint8_t* end = reinterpret_cast<uint8_t*>(
-            reinterpret_cast<uintptr_t>(start) + 0x110
-        );
-        
-        const auto instructionList = *Dissassembler.Dissassemble(start, end, true);
-
-        //L->tt is exposed when it is set to 9 (LUA_TTHREAD)
-        log_search("mov byte ptr [rax], 9");
-        const auto ttIns = instructionList.GetInstructionWhichMatches("mov", "byte ptr [rax], 9");
-        const auto ttOffset = ttIns->detail[1]->disp;
-        log_offset(LuaStateFieldToString(LuaStateField::tt), ttOffset);
-        this->offsets.emplace(LuaStateField::tt, ttOffset);
-
-        //L->marked is exposed by currentwhite & 3
-        log_search("and r8b, 3");
-        const auto markedPos = instructionList.GetInstructionPosition("and", "r8b, 3", false) + 1;
-        const auto markedOffset = markedPos->detail[0]->disp;
-        log_offset(LuaStateFieldToString(LuaStateField::marked), markedOffset);
-        this->offsets.emplace(LuaStateField::marked, markedOffset);
-
-        //L->global is exposed by the copy insn
-        log_search("mov qword ptr [rax + 0x??], rcx");
-        const auto gcpyInsn = instructionList.GetInstructionWhichMatches("mov", "qword ptr [rax + 0x??], rcx");
-        const auto gOffset = gcpyInsn->detail[0]->disp;
-        log_offset(LuaStateFieldToString(LuaStateField::global), gOffset);
-        this->offsets.emplace(LuaStateField::global, gOffset);
-
-        //activememcat is exposed when it is copied from the main thread, as is gt.
-
-        //singlestep is exposed by a similar one.
-        log_search("mov byte ptr [rbx + 0x??], al");
-        const auto allMovByteAl = instructionList.GetAllInstructionsWhichMatch("mov", "byte ptr [rbx + 0x??], al");
-        const LuaStateField byteAlFields[2] = {LuaStateField::activememcat, LuaStateField::singlestep};
-
-        for (int i = 0; i < allMovByteAl.size(); ++i) {
-            auto field = byteAlFields[i];
-            auto& ins = allMovByteAl[i];
-            auto rOffset = ins->detail[0]->disp;
-            log_offset(LuaStateFieldToString(field), rOffset);
-            this->offsets.emplace(field, rOffset);
-        }
-
-        log_search("mov qword ptr [rbx + 0x??], rax");
-        const auto allMovQRbx = instructionList.GetAllInstructionsWhichMatch("mov", "qword ptr [rbx + 0x??], rax");
-        const auto gtCpyIns = *(allMovQRbx.end() - 1);
-        const auto gtOffset = gtCpyIns->detail[0]->disp;
-        log_offset(LuaStateFieldToString(LuaStateField::gt), gtOffset);
-        this->offsets.emplace(LuaStateField::gt, gtOffset);
     }
 
     { //lua_newthread
@@ -285,6 +225,126 @@ void LuaStateDumper::Scan() {
         const auto statusOffset = statusIns->detail[1]->disp;
         log_offset(LuaStateFieldToString(LuaStateField::status), statusOffset);
         this->offsets.emplace(LuaStateField::status, statusOffset);
+    }
+
+    { //luaD_reallocstack
+        puts("Scanning for luaD_reallocstack...");
+
+        //get luaD_reallocstack disasm.
+        auto luaD_reallocstack_match = hat::find_pattern(luaD_reallocstack_signature, ".text");
+        if (!luaD_reallocstack_match.has_result()) fail("luaD_reallocstack");
+
+        printf("luaD_reallocstack @ %p\n", luaD_reallocstack_match.get());
+
+        //bounds of function
+        uint8_t* start = reinterpret_cast<uint8_t*>(luaD_reallocstack_match.get());
+        uint8_t* end = reinterpret_cast<uint8_t*>(
+            reinterpret_cast<uintptr_t>(start) + 0x195
+        );
+        
+        const auto instructionList = *Dissassembler.Dissassemble(start, end, true);
+
+
+        //openupval is the second field which is read when L is in rcx.
+        log_search("mov ..., qword ptr [rcx + 0x??]");
+        const auto all_mov_qp_rcx = instructionList.GetAllInstructionsWhichMatch("mov", "qword ptr [rcx +", true);
+        const auto openupval_offset = all_mov_qp_rcx[1]->detail[1]->disp;
+        log_offset(LuaStateFieldToString(LuaStateField::openupval), openupval_offset);
+        this->offsets.emplace(LuaStateField::openupval, openupval_offset);
+
+    }
+
+
+    { //luaE_newthread
+        puts("Scanning for luaE_newthread...");
+
+        //get stack_init disasm.
+        auto luaE_newthread_match = hat::find_pattern(luaE_newthread_signature, ".text");
+        if (!luaE_newthread_match.has_result()) fail("luaE_newthread");
+
+        printf("luaE_newthread @ %p\n", luaE_newthread_match.get());
+
+        //function bounds
+        uint8_t* start = reinterpret_cast<uint8_t*>(luaE_newthread_match.get());
+        uint8_t* end = reinterpret_cast<uint8_t*>(
+            reinterpret_cast<uintptr_t>(start) + 0x110
+        );
+        
+        const auto instructionList = *Dissassembler.Dissassemble(start, end, true);
+
+        //L->tt is exposed when it is set to 9 (LUA_TTHREAD)
+        log_search("mov byte ptr [rax], 9");
+        const auto ttIns = instructionList.GetInstructionWhichMatches("mov", "byte ptr [rax], 9");
+        const auto ttOffset = ttIns->detail[1]->disp;
+        log_offset(LuaStateFieldToString(LuaStateField::tt), ttOffset);
+        this->offsets.emplace(LuaStateField::tt, ttOffset);
+
+        //L->marked is exposed by currentwhite & 3
+        log_search("and r8b, 3");
+        const auto markedPos = instructionList.GetInstructionPosition("and", "r8b, 3", false) + 1;
+        const auto markedOffset = markedPos->detail[0]->disp;
+        log_offset(LuaStateFieldToString(LuaStateField::marked), markedOffset);
+        this->offsets.emplace(LuaStateField::marked, markedOffset);
+
+        //L->global is exposed by the copy insn
+        log_search("mov qword ptr [rax + 0x??], rcx");
+        const auto gcpyInsn = instructionList.GetInstructionWhichMatches("mov", "qword ptr [rax + 0x??], rcx");
+        const auto gOffset = gcpyInsn->detail[0]->disp;
+        log_offset(LuaStateFieldToString(LuaStateField::global), gOffset);
+        this->offsets.emplace(LuaStateField::global, gOffset);
+
+        //activememcat is exposed when it is copied from the main thread, as is gt.
+
+        //singlestep is exposed by a similar one.
+        log_search("mov byte ptr [rbx + 0x??], al");
+        const auto allMovByteAl = instructionList.GetAllInstructionsWhichMatch("mov", "byte ptr [rbx + 0x??], al");
+        const LuaStateField byteAlFields[2] = {LuaStateField::activememcat, LuaStateField::singlestep};
+
+        for (int i = 0; i < allMovByteAl.size(); ++i) {
+            auto field = byteAlFields[i];
+            auto& ins = allMovByteAl[i];
+            auto rOffset = ins->detail[0]->disp;
+            log_offset(LuaStateFieldToString(field), rOffset);
+            this->offsets.emplace(field, rOffset);
+        }
+
+        log_search("mov qword ptr [rbx + 0x??], rax");
+        const auto allMovQRbx = instructionList.GetAllInstructionsWhichMatch("mov", "qword ptr [rbx + 0x??], rax");
+        const auto gtCpyIns = *(allMovQRbx.end() - 1);
+        const auto gtOffset = gtCpyIns->detail[0]->disp;
+        log_offset(LuaStateFieldToString(LuaStateField::gt), gtOffset);
+        this->offsets.emplace(LuaStateField::gt, gtOffset);
+
+
+
+
+
+        //there's now only two fields left: userdata and namecall.
+        //we'll walk all the instructions which mov into L in the
+        //inlined preinit_state and see which we don't have.
+        std::array<const AsmInstruction*, 2> remaining = {nullptr, nullptr};
+
+        for (const auto& i: allMovQRbx) {
+            auto existing = std::find_if(this->offsets.begin(), this->offsets.end(), [&](const std::pair<LuaStateField, ptrdiff_t>& pair) -> bool {
+                return pair.second == i->detail[0]->disp;
+            });
+
+            if (existing == this->offsets.end())
+                remaining[remaining[0] == nullptr? 0: 1] = &(*i);
+        }
+
+        LUDUMP_ASSERT(remaining[0] == nullptr, "namecall retrieval failed");
+        LUDUMP_ASSERT(remaining[1] == nullptr, "userdata retrieval failed");
+
+        const auto* namecallIns = remaining[0];
+        const auto namecallOffset = namecallIns->detail[0]->disp;
+        log_offset(LuaStateFieldToString(LuaStateField::namecall), namecallOffset);
+        this->offsets.emplace(LuaStateField::namecall, namecallOffset);
+
+        const auto* userdataIns = remaining[1];
+        const auto userdataOffset = userdataIns->detail[0]->disp;
+        log_offset(LuaStateFieldToString(LuaStateField::userdata), userdataOffset);
+        this->offsets.emplace(LuaStateField::userdata, userdataOffset);
     }
 }
 

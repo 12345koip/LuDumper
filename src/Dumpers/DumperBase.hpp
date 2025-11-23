@@ -21,6 +21,7 @@ See LICENSE and README for details.
 #define fail(msg) {puts("failure: " msg); return;}
 #define log_offset(offsetStr, offset) printf("%s @ +0x%03" PRIx64 "\n", offsetStr, offset)
 #define log_search(insn) puts("Finding instruction: \"" insn "\"")
+#define LUDUMP_ASSERT(cond, msg) {if (!!(cond)) fail(msg);}
 
 namespace LuDumper {
     namespace Dumpers {
