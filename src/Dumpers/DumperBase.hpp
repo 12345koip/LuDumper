@@ -25,8 +25,8 @@ See LICENSE and README for details.
 #define log_offset(offsetStr, offset) printf("%s @ +0x%03" PRIx64 "\n", offsetStr, offset)
 #define log_search(insn) puts("Finding instruction: \"" insn "\"")
 #define LUDUMP_ASSERT(cond, msg) {if (!!(cond)) fail(msg);}
+#define log_finish(x) puts("\n\nFINISH: " x "\n\n")
 
-#define DEFAULT_PTR "void*"
 
 namespace LuDumper {
     namespace Dumpers {

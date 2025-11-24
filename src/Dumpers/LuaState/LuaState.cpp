@@ -11,7 +11,7 @@ using namespace LuDumper::Dumpers;
 using namespace LuDumper::Dissassembler;
 
 void LuaStateDumper::Scan() {
-    puts("Dumping Lua state...");
+    puts("Dumping lua_State...");
 
     auto& Dissassembler = Dissassembler::Dissassembler::GetSingleton();
 

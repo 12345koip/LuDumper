@@ -10,6 +10,7 @@ See LICENSE and README for details.
 #include <thread>
 #include <string>
 #include <sstream>
+#include <fstream>
 #include "Dumpers/DumperBase.hpp"
 #include "Dumpers/LuaState/LuaState.hpp"
 #include "Misc/FileBits/FileBits.hpp"
@@ -45,8 +46,10 @@ void Entry() {
         FORWARD_LUA_STATE << NEWLINE << FORWARD_LUA_TABLE <<
         NEWLINE << FORWARD_UPVAL << NEWLINE << FORWARD_TVALUE <<
         NEWLINE << FORWARD_GLOBAL_STATE << NEWLINE <<  FORWARD_GCOBJECT <<
-        NEWLINE << NEWLINE << NEWLINE << REMOVE_STRUCT_PREF <<
-        NEWLINE << NEWLINE << STKID_TYPEDEF << NEWLINE << NEWLINE;
+        NEWLINE << FORWARD_VALUE << NEWLINE << NEWLINE << REMOVE_STRUCT_PREF <<
+        NEWLINE << NEWLINE << STKID_TYPEDEF << NEWLINE << NEWLINE << NEWLINE << NEWLINE;
+
+    lbuf << LuDumper::FileBits::GetStaticLuauStructs() << NEWLINE;
 
 
     //add fields.
@@ -54,7 +57,7 @@ void Entry() {
     lbuf << luaStateDumper.ToHeaderContents();
     lbuf << NEWLINE;
 
-    //puts(lbuf.str().c_str());
+    log_finish("lua_State");
 
 
     //temporary keepalive.
