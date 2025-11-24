@@ -8,8 +8,11 @@ See LICENSE and README for details.
 
 #include <windows.h>
 #include <thread>
+#include <string>
+#include <sstream>
 #include "Dumpers/DumperBase.hpp"
 #include "Dumpers/LuaState/LuaState.hpp"
+#include "Misc/FileBits/FileBits.hpp"
 
 using namespace LuDumper::Dumpers;
 
@@ -33,6 +36,26 @@ void Entry() {
     //dump lua state.
     LuaStateDumper luaStateDumper;
     luaStateDumper.Scan();
+
+    //Luau file buf.
+    std::ostringstream lbuf;
+    lbuf << COMMON_FILE_TOP << NEWLINE << NEWLINE <<
+        INCLUDE_ONCE << NEWLINE << NEWLINE <<
+        LUAU_DUMP_INCLUDES << NEWLINE << NEWLINE <<
+        FORWARD_LUA_STATE << NEWLINE << FORWARD_LUA_TABLE <<
+        NEWLINE << FORWARD_UPVAL << NEWLINE << FORWARD_TVALUE <<
+        NEWLINE << FORWARD_GLOBAL_STATE << NEWLINE <<  FORWARD_GCOBJECT <<
+        NEWLINE << NEWLINE << NEWLINE << REMOVE_STRUCT_PREF <<
+        NEWLINE << NEWLINE << STKID_TYPEDEF << NEWLINE << NEWLINE;
+
+
+    //add fields.
+    lbuf << NEWLINE << NEWLINE;
+    lbuf << luaStateDumper.ToHeaderContents();
+    lbuf << NEWLINE;
+
+    //puts(lbuf.str().c_str());
+
 
     //temporary keepalive.
     while (true)

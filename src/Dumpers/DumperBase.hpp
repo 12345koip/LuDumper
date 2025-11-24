@@ -11,11 +11,14 @@ See LICENSE and README for details.
 #include "libhat/include/libhat.hpp"
 #include "libhat/include/libhat/scanner.hpp"
 #include "libhat/include/libhat/signature.hpp"
-#include <unordered_map>
+#include "Misc/FileBits/FileBits.hpp"
+#include <vector>
 #include <string>
 #include <cstdint>
 #include <inttypes.h>
 #include <stdexcept>
+#include <sstream>
+#include <algorithm>
 
 #define l_memberAOB static inline constexpr const char*
 #define fail(msg) {puts("failure: " msg); return;}
@@ -23,14 +26,17 @@ See LICENSE and README for details.
 #define log_search(insn) puts("Finding instruction: \"" insn "\"")
 #define LUDUMP_ASSERT(cond, msg) {if (!!(cond)) fail(msg);}
 
+#define DEFAULT_PTR "void*"
+
 namespace LuDumper {
     namespace Dumpers {
         template<typename T> class BaseDumper {
             protected:
-                std::unordered_map<T, ptrdiff_t> offsets {};
+                //vector with pair so entries can be easily sorted.
+                std::vector<std::pair<T, ptrdiff_t>> offsets {};
 
             public:
-                virtual std::string ToHeaderContents() const = 0;
+                virtual std::string ToHeaderContents() = 0;
                 virtual void Scan() = 0;
                 
                 inline ptrdiff_t GetOffset(const T& fieldName) const {
