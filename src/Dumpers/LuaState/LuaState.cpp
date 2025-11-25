@@ -346,6 +346,9 @@ void LuaStateDumper::Scan() {
         log_offset(LuaStateFieldToString(LuaStateField::userdata), userdataOffset);
         this->offsets.emplace_back(LuaStateField::userdata, userdataOffset);
     }
+
+
+    log_finish("lua_State");
 }
 
 std::string LuaStateDumper::ToHeaderContents() {

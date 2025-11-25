@@ -19,6 +19,7 @@ See LICENSE and README for details.
 #include <stdexcept>
 #include <sstream>
 #include <algorithm>
+#include <format>
 
 #define l_memberAOB static inline constexpr const char*
 #define fail(msg) {puts("failure: " msg); return;}
@@ -26,6 +27,28 @@ See LICENSE and README for details.
 #define log_search(insn) puts("Finding instruction: \"" insn "\"")
 #define LUDUMP_ASSERT(cond, msg) {if (!!(cond)) fail(msg);}
 #define log_finish(x) puts("\n\nFINISH: " x "\n\n")
+
+#define decl_array(type, nelems) ("ARR " type " " nelems)
+
+inline const char* parse_decl_array(const char* arrayStr, std::string_view varName) {
+    static std::string result;
+
+    const char* typeStart = strchr(arrayStr, ' ');
+    if (!typeStart) return nullptr;
+    typeStart++;
+
+    const char* lenStart = strchr(typeStart, ' ');
+    if (!lenStart) return nullptr;
+
+    std::string_view type (typeStart, lenStart - typeStart);
+    std::string_view len (lenStart + 1);
+
+    result = std::format("{} {}[{}]", type, varName, len);
+    return result.c_str();
+}
+
+
+
 
 
 namespace LuDumper {

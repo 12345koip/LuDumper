@@ -22,6 +22,7 @@ add_library(LU_DUMPER SHARED
     src/Entry.cpp
     src/Misc/Dissassembler/Dissassembler.cpp
     src/Dumpers/LuaState/LuaState.cpp
+    src/Dumpers/TValue/TValue.cpp
     src/Misc/FileBits/FileBits.cpp
 )
 

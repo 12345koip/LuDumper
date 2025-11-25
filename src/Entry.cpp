@@ -13,6 +13,7 @@ See LICENSE and README for details.
 #include <fstream>
 #include "Dumpers/DumperBase.hpp"
 #include "Dumpers/LuaState/LuaState.hpp"
+#include "Dumpers/TValue/TValue.hpp"
 #include "Misc/FileBits/FileBits.hpp"
 
 using namespace LuDumper::Dumpers;
@@ -34,9 +35,19 @@ static void InitConsole() {
 void Entry() {
     InitConsole();
 
-    //dump lua state.
+
+
+    //dumps -----
     LuaStateDumper luaStateDumper;
     luaStateDumper.Scan();
+
+    TValueDumper tvalueDumper;
+    tvalueDumper.Scan();
+    //-----------
+
+
+
+
 
     //Luau file buf.
     std::ostringstream lbuf;
@@ -45,19 +56,21 @@ void Entry() {
         LUAU_DUMP_INCLUDES << NEWLINE << NEWLINE <<
         FORWARD_LUA_STATE << NEWLINE << FORWARD_LUA_TABLE <<
         NEWLINE << FORWARD_UPVAL << NEWLINE << FORWARD_TVALUE <<
-        NEWLINE << FORWARD_GLOBAL_STATE << NEWLINE <<  FORWARD_GCOBJECT <<
+        NEWLINE << FORWARD_GLOBAL_STATE << NEWLINE << FORWARD_GCOBJECT <<
         NEWLINE << FORWARD_VALUE << NEWLINE << NEWLINE << REMOVE_STRUCT_PREF <<
         NEWLINE << NEWLINE << STKID_TYPEDEF << NEWLINE << NEWLINE << NEWLINE << NEWLINE;
 
     lbuf << LuDumper::FileBits::GetStaticLuauStructs() << NEWLINE;
 
 
-    //add fields.
+    //add structs.
     lbuf << NEWLINE << NEWLINE;
     lbuf << luaStateDumper.ToHeaderContents();
-    lbuf << NEWLINE;
+    lbuf << NEWLINE << NEWLINE;
+    lbuf << tvalueDumper.ToHeaderContents();
+    lbuf << NEWLINE << NEWLINE;
 
-    log_finish("lua_State");
+    
 
 
     //temporary keepalive.
