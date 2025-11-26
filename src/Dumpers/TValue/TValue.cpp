@@ -79,6 +79,8 @@ void TValueDumper::Scan() {
         log_offset(TValueFieldToString(TValueField::extra), extraOffset);
         this->offsets.emplace_back(TValueField::extra, extraOffset);
     }
+
+    log_finish("TValue");
 }
 
 std::string TValueDumper::ToHeaderContents() {
@@ -100,7 +102,7 @@ std::string TValueDumper::ToHeaderContents() {
         const char* type = typesMap.at(key);
         buf << TAB_INDENT;
 
-        if (strchr(type, ' ') != nullptr) //space = array fmt.
+        if (strstr(type, "ARR") != nullptr) //space = array fmt.
             buf << parse_decl_array(type, TValueFieldToString(key));
         else
             buf << type << " " << TValueFieldToString(key);

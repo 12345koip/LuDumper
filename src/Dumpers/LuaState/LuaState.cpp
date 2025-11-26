@@ -333,8 +333,8 @@ void LuaStateDumper::Scan() {
                 remaining[remaining[0] == nullptr? 0: 1] = &(*i);
         }
 
-        LUDUMP_ASSERT(remaining[0] == nullptr, "namecall retrieval failed");
-        LUDUMP_ASSERT(remaining[1] == nullptr, "userdata retrieval failed");
+        LUDUMP_ASSERT(remaining[0] != nullptr, "namecall retrieval failed");
+        LUDUMP_ASSERT(remaining[1] != nullptr, "userdata retrieval failed");
 
         const auto* namecallIns = remaining[0];
         const auto namecallOffset = namecallIns->detail[0]->disp;

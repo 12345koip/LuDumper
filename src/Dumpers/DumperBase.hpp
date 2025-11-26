@@ -25,28 +25,25 @@ See LICENSE and README for details.
 #define fail(msg) {puts("failure: " msg); return;}
 #define log_offset(offsetStr, offset) printf("%s @ +0x%03" PRIx64 "\n", offsetStr, offset)
 #define log_search(insn) puts("Finding instruction: \"" insn "\"")
-#define LUDUMP_ASSERT(cond, msg) {if (!!(cond)) fail(msg);}
+#define LUDUMP_ASSERT(cond, msg) {if (!!(!(cond))) fail(msg);}
 #define log_finish(x) puts("\n\nFINISH: " x "\n\n")
+#define debug_ins_log(ins) printf("%s %s\n", ins->mnemonic.c_str(), ins->operands.c_str())
 
 #define decl_array(type, nelems) ("ARR " type " " nelems)
 
-inline const char* parse_decl_array(const char* arrayStr, std::string_view varName) {
-    static std::string result;
-
+inline std::string parse_decl_array(const char* arrayStr, std::string_view varName) {
     const char* typeStart = strchr(arrayStr, ' ');
-    if (!typeStart) return nullptr;
+    if (!typeStart) return {};
     typeStart++;
 
     const char* lenStart = strchr(typeStart, ' ');
-    if (!lenStart) return nullptr;
+    if (!lenStart) return {};
 
     std::string_view type (typeStart, lenStart - typeStart);
     std::string_view len (lenStart + 1);
 
-    result = std::format("{} {}[{}]", type, varName, len);
-    return result.c_str();
+    return std::format("{} {}[{}]", type, varName, len);
 }
-
 
 
 

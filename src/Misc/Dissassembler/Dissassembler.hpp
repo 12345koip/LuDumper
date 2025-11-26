@@ -27,6 +27,9 @@ namespace LuDumper {
             int ref;
             int64_t imm;
             x86_reg reg;
+            x86_reg base;
+            x86_reg index;
+            int scale;
         };
 
         struct AsmInstruction {
@@ -52,6 +55,7 @@ namespace LuDumper {
                 const AsmInstruction* GetInstructionWhichMatches(const std::string_view& mnemonic, const std::string_view& operandPattern, bool fuzzy = false) const;
                 std::vector<const AsmInstruction*> GetAllInstructionsWhichMatch(const std::string_view& mnemonic, const std::string_view& operandPattern, bool fuzzy = false) const;
                 std::vector<LuDumper::Dissassembler::AsmInstruction>::const_iterator GetInstructionPosition(const std::string_view& mnemonic, const std::string_view& operandPattern, bool fuzzy = false) const;
+                std::vector<LuDumper::Dissassembler::AsmInstruction>::const_iterator GetInstructionPosition(const AsmInstruction& ins, bool fuzzy = false) const;
 
                 inline auto begin() const {return this->instructions.begin();}
                 inline auto end() const {return this->instructions.end();}

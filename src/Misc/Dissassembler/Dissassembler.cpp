@@ -133,6 +133,15 @@ std::vector<LuDumper::Dissassembler::AsmInstruction>::const_iterator Instruction
     return this->instructions.end();
 }
 
+std::vector<LuDumper::Dissassembler::AsmInstruction>::const_iterator InstructionList::GetInstructionPosition(const AsmInstruction& ins, bool fuzzy) const {
+    for (auto it = this->instructions.begin(); it != this->instructions.end(); ++it) {
+        if (&(*it) == ins) //yes i have regrets lmao
+            return it;
+    }
+
+    return this->instructions.end();
+}
+
 
 
 Dissassembler& Dissassembler::GetSingleton() {
@@ -215,8 +224,11 @@ std::optional<InstructionList> Dissassembler::Dissassemble(const void* start, co
                 auto operand = std::make_shared<CsOperand>();
                 operand->type = op.type;
                 operand->disp = op.mem.disp;
-                operand->reg = op.reg;
-                operand->imm = op.imm;
+                operand->reg  = op.reg;
+                operand->imm  = op.imm;
+                operand->base = op.mem.base;
+                operand->index = op.mem.index;
+                operand->scale = op.mem.scale;
                 ops.push_back(operand);
             }
         }
