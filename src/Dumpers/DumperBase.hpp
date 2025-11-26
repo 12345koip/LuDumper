@@ -30,6 +30,9 @@ See LICENSE and README for details.
 #define debug_ins_log(ins) printf("%s %s\n", ins->mnemonic.c_str(), ins->operands.c_str())
 
 #define decl_array(type, nelems) ("ARR " type " " nelems)
+#define decl_array_align(type, nelems, align) ("ARR " type " " nelems " ALIGN " align)
+
+
 
 inline std::string parse_decl_array(const char* arrayStr, std::string_view varName) {
     const char* typeStart = strchr(arrayStr, ' ');
@@ -38,11 +41,32 @@ inline std::string parse_decl_array(const char* arrayStr, std::string_view varNa
 
     const char* lenStart = strchr(typeStart, ' ');
     if (!lenStart) return {};
+    std::string_view type(typeStart, lenStart - typeStart);
 
-    std::string_view type (typeStart, lenStart - typeStart);
-    std::string_view len (lenStart + 1);
+    const char* alignStart = strstr(lenStart + 1, "ALIGN");
+    std::string_view len;
+    std::string_view align;
 
-    return std::format("{} {}[{}]", type, varName, len);
+    if (alignStart) {
+        len = std::string_view(lenStart + 1, alignStart - (lenStart + 1));
+        align = std::string_view(alignStart + 6);
+    } else {
+        len = std::string_view(lenStart + 1);
+    }
+    
+    auto trim = [](std::string_view s) {
+        size_t start = s.find_first_not_of(' ');
+        size_t end   = s.find_last_not_of(' ');
+        return (start == std::string_view::npos) ? std::string_view{} : s.substr(start, end - start + 1);
+    };
+
+    len = trim(len);
+    align = trim(align);
+
+    if (!align.empty())
+        return std::format("alignas({}) {} {}[{}]", align, type, varName, len);
+    else
+        return std::format("{} {}[{}]", type, varName, len);
 }
 
 

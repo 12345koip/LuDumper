@@ -15,6 +15,7 @@ See LICENSE and README for details.
 #include "Dumpers/LuaState/LuaState.hpp"
 #include "Dumpers/TValue/TValue.hpp"
 #include "Dumpers/TString/TString.hpp"
+#include "Dumpers/Udata/Udata.hpp"
 #include "Misc/FileBits/FileBits.hpp"
 
 using namespace LuDumper::Dumpers;
@@ -47,6 +48,9 @@ void Entry() {
 
     TStringDumper tstringDumper;
     tstringDumper.Scan();
+
+    UdataDumper udataDumper;
+    udataDumper.Scan();
     //-----------
 
 
@@ -75,7 +79,10 @@ void Entry() {
     lbuf << NEWLINE << NEWLINE;
     lbuf << tstringDumper.ToHeaderContents();
     lbuf << NEWLINE << NEWLINE;
+    lbuf << udataDumper.ToHeaderContents();
+    lbuf << NEWLINE << NEWLINE;
 
+    
 
     //temporary keepalive.
     while (true)
