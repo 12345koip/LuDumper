@@ -29,10 +29,12 @@ See LICENSE and README for details.
 #define FORWARD_UPVAL "struct UpVal;"
 #define FORWARD_GCOBJECT "union GCObject;"
 #define FORWARD_VALUE "union Value;"
+#define FORWARD_LBUFFER "struct LuauBuffer;"
 
 //typedefs.
 #define STKID_TYPEDEF "typedef TValue* StkId;"
-#define REMOVE_STRUCT_PREF "typedef struct TValue TValue;\ntypedef struct global_State global_State;\ntypedef struct UpVal UpVal;\ntypedef struct LuaTable LuaTable;\ntypedef struct CallInfo CallInfo;\ntypedef struct TString TString; typedef struct lua_State lua_State;\ntypedef union GCObject GCObject;\ntypedef union Value Value;"
+#define REMOVE_STRUCT_PREF "typedef struct TValue TValue;\ntypedef struct global_State global_State;\ntypedef struct UpVal UpVal;\ntypedef struct LuaTable LuaTable;\ntypedef struct CallInfo CallInfo;\ntypedef struct TString TString; typedef struct lua_State lua_State;\ntypedef union GCObject GCObject;\ntypedef union Value Value;\ntypedef struct LuauBuffer LuauBuffer;"
+#define BUFFER_TYPEDEF "typedef struct LuauBuffer Buffer;"
 
 namespace LuDumper {
     namespace FileBits {

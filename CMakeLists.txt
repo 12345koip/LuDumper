@@ -25,6 +25,7 @@ add_library(LU_DUMPER SHARED
     src/Dumpers/TValue/TValue.cpp
     src/Dumpers/TString/TString.cpp
     src/Dumpers/Udata/Udata.cpp
+    src/Dumpers/LuauBuffer/LuauBuffer.cpp
     src/Misc/FileBits/FileBits.cpp
 )
 
