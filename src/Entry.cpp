@@ -17,6 +17,7 @@ See LICENSE and README for details.
 #include "Dumpers/TString/TString.hpp"
 #include "Dumpers/Udata/Udata.hpp"
 #include "Dumpers/LuauBuffer/LuauBuffer.hpp"
+#include "Dumpers/Closure/Closure.hpp"
 #include "Misc/FileBits/FileBits.hpp"
 
 using namespace LuDumper::Dumpers;
@@ -55,6 +56,9 @@ void Entry() {
 
     LuauBufferDumper bufferDumper;
     bufferDumper.Scan();
+
+    ClosureDumper clDumper;
+    clDumper.Scan();
     //-----------
 
 
@@ -69,8 +73,8 @@ void Entry() {
         FORWARD_LUA_STATE << NEWLINE << FORWARD_LUA_TABLE <<
         NEWLINE << FORWARD_UPVAL << NEWLINE << FORWARD_TVALUE <<
         NEWLINE << FORWARD_GLOBAL_STATE << NEWLINE << FORWARD_GCOBJECT <<
-        NEWLINE << FORWARD_VALUE << NEWLINE << FORWARD_LBUFFER << NEWLINE << NEWLINE << NEWLINE BUFFER_TYPEDEF <<
-        NEWLINE << REMOVE_STRUCT_PREF << NEWLINE << NEWLINE <<
+        NEWLINE << FORWARD_VALUE << NEWLINE << FORWARD_LBUFFER << NEWLINE << FORWARD_PROTO << NEWLINE << NEWLINE << NEWLINE << BUFFER_TYPEDEF <<
+        NEWLINE << FUNC_TYPEDEFS << NEWLINE << NEWLINE << REMOVE_STRUCT_PREF << NEWLINE << NEWLINE <<
         STKID_TYPEDEF << NEWLINE << NEWLINE << NEWLINE << NEWLINE;
 
     lbuf << LuDumper::FileBits::GetStaticLuauStructs() << NEWLINE;
@@ -87,6 +91,8 @@ void Entry() {
     lbuf << udataDumper.ToHeaderContents();
     lbuf << NEWLINE << NEWLINE;
     lbuf << bufferDumper.ToHeaderContents();
+    lbuf << NEWLINE << NEWLINE;
+    lbuf << clDumper.ToHeaderContents();
     lbuf << NEWLINE << NEWLINE;
 
     
