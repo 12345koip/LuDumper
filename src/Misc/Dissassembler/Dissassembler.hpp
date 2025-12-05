@@ -57,6 +57,16 @@ namespace LuDumper {
                 std::vector<LuDumper::Dissassembler::AsmInstruction>::const_iterator GetInstructionPosition(const std::string_view& mnemonic, const std::string_view& operandPattern, bool fuzzy = false) const;
                 std::vector<LuDumper::Dissassembler::AsmInstruction>::const_iterator GetInstructionPosition(const AsmInstruction& ins, bool fuzzy = false) const;
 
+                inline const AsmInstruction* GetInstructionByBytes(const std::vector<uint8_t>& bytes) const {
+                    for (const auto& i: this->instructions) {
+                        if (i.bytes == bytes)
+                            return &i;
+                    }
+
+                    return nullptr;
+                }
+
+
                 inline auto begin() const {return this->instructions.begin();}
                 inline auto end() const {return this->instructions.end();}
 

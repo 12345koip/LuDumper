@@ -34,7 +34,7 @@ See LICENSE and README for details.
 
 //typedefs.
 #define STKID_TYPEDEF "typedef TValue* StkId;"
-#define REMOVE_STRUCT_PREF "typedef struct TValue TValue;\ntypedef struct global_State global_State;\ntypedef struct UpVal UpVal;\ntypedef struct LuaTable LuaTable;\ntypedef struct CallInfo CallInfo;\ntypedef struct TString TString; typedef struct lua_State lua_State;\ntypedef union GCObject GCObject;\ntypedef union Value Value;\ntypedef struct LuauBuffer LuauBuffer;\ntypedef struct Proto Proto;"
+#define REMOVE_STRUCT_PREF "typedef struct TValue TValue;\ntypedef struct global_State global_State;\ntypedef struct UpVal UpVal;\ntypedef struct LuaTable LuaTable;\ntypedef struct CallInfo CallInfo;\ntypedef struct TString TString;\ntypedef struct lua_State lua_State;\ntypedef union GCObject GCObject;\ntypedef union Value Value;\ntypedef struct LuauBuffer LuauBuffer;\ntypedef struct Proto Proto;"
 #define BUFFER_TYPEDEF "typedef struct LuauBuffer Buffer;"
 #define FUNC_TYPEDEFS "typedef int (*lua_CFunction)(lua_State *L);\ntypedef int (*lua_Continuation)(lua_State *L, int status);"
 

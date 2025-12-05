@@ -27,6 +27,8 @@ add_library(LU_DUMPER SHARED
     src/Dumpers/Udata/Udata.cpp
     src/Dumpers/LuauBuffer/LuauBuffer.cpp
     src/Dumpers/Closure/Closure.cpp
+    src/Dumpers/LuaTable/LuaTable.cpp
+    src/Dumpers/GlobalState/GlobalState.cpp
     src/Misc/FileBits/FileBits.cpp
 )
 

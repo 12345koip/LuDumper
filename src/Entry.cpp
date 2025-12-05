@@ -18,6 +18,8 @@ See LICENSE and README for details.
 #include "Dumpers/Udata/Udata.hpp"
 #include "Dumpers/LuauBuffer/LuauBuffer.hpp"
 #include "Dumpers/Closure/Closure.hpp"
+#include "Dumpers/LuaTable/LuaTable.hpp"
+#include "Dumpers/GlobalState/GlobalState.hpp"
 #include "Misc/FileBits/FileBits.hpp"
 
 using namespace LuDumper::Dumpers;
@@ -59,6 +61,12 @@ void Entry() {
 
     ClosureDumper clDumper;
     clDumper.Scan();
+
+    LuaTableDumper tableDumper;
+    tableDumper.Scan();
+
+    GlobalStateDumper gsDumper;
+    gsDumper.Scan();
     //-----------
 
 
@@ -95,7 +103,9 @@ void Entry() {
     lbuf << clDumper.ToHeaderContents();
     lbuf << NEWLINE << NEWLINE;
 
-    
+    std::ofstream file ("C:\\Users\\danba\\Downloads\\lfields.h");
+    file << lbuf.str();
+    file.close();
 
     //temporary keepalive.
     while (true)

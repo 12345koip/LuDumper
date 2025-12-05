@@ -5,7 +5,7 @@
             "name": "Roblox Studio",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "C:\\Users\\${env:USERNAME}\\AppData\\Local\\Roblox\\Versions\\version-d638b440a9224bb2\\RobloxStudioBeta.exe",
+            "program": "C:\\Users\\${env:USERNAME}\\AppData\\Local\\Roblox\\Versions\\version-523a50bddf034d9a\\RobloxStudioBeta.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
