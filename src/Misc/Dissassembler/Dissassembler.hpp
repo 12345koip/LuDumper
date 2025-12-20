@@ -69,6 +69,8 @@ namespace LuDumper {
 
                 inline auto begin() const {return this->instructions.begin();}
                 inline auto end() const {return this->instructions.end();}
+                inline auto rbegin() const {return this->instructions.rbegin();}
+                inline auto rend() const {return this->instructions.rend();}
 
                 inline uint64_t size() const {return this->instructions.size();}
 

@@ -65,7 +65,7 @@ void Entry() {
     LuaTableDumper tableDumper;
     tableDumper.Scan();
 
-    GlobalStateDumper gsDumper;
+    GlobalStateDumper gsDumper (&tvalueDumper);
     gsDumper.Scan();
     //-----------
 
@@ -80,7 +80,7 @@ void Entry() {
         LUAU_DUMP_INCLUDES << NEWLINE << NEWLINE <<
         FORWARD_LUA_STATE << NEWLINE << FORWARD_LUA_TABLE <<
         NEWLINE << FORWARD_UPVAL << NEWLINE << FORWARD_TVALUE <<
-        NEWLINE << FORWARD_GLOBAL_STATE << NEWLINE << FORWARD_GCOBJECT <<
+        NEWLINE << FORWARD_GLOBAL_STATE << NEWLINE << FORWARD_GCOBJECT << FORWARD_STRINGTABLE << NEWLINE << FORWARD_CB << NEWLINE << FORWARD_ECB << NEWLINE << FORWARD_LDEBUG << NEWLINE<< FORWARD_LUA_PAGE <<
         NEWLINE << FORWARD_VALUE << NEWLINE << FORWARD_LBUFFER << NEWLINE << FORWARD_PROTO << NEWLINE << NEWLINE << NEWLINE << BUFFER_TYPEDEF <<
         NEWLINE << FUNC_TYPEDEFS << NEWLINE << NEWLINE << REMOVE_STRUCT_PREF << NEWLINE << NEWLINE <<
         STKID_TYPEDEF << NEWLINE << NEWLINE << NEWLINE << NEWLINE;
@@ -102,8 +102,10 @@ void Entry() {
     lbuf << NEWLINE << NEWLINE;
     lbuf << clDumper.ToHeaderContents();
     lbuf << NEWLINE << NEWLINE;
+    lbuf << gsDumper.ToHeaderContents();
+    lbuf << NEWLINE << NEWLINE;
 
-    std::ofstream file ("C:\\Users\\danba\\Downloads\\lfields.h");
+    std::ofstream file ("C:\\Users\\kkoip\\Downloads\\LuDump.h");
     file << lbuf.str();
     file.close();
 

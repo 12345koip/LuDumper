@@ -3,3 +3,5 @@ build-debug/
 build-release/
 src/inject/
 bin/inject.exe
+.idea/
+cmake-build-*/

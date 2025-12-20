@@ -39,14 +39,19 @@ void ClosureDumper::Scan() {
         
         const auto instructionList = *Dissassembler.Dissassemble(start, end, true);
 
-
+        //the only mov word ptr is isC.
+        log_search("mov word ptr [rax + 0x??], 1");
+        const auto iscIns = instructionList.GetInstructionWhichMatches("mov", "word ptr [rax + 0x??], 1");
+        const auto iscOffset = iscIns->detail[0]->disp;
+        log_offset(ClosureFieldToString(ClosureField::isC), iscOffset);
+        this->offsets.emplace_back(ClosureField::isC, iscOffset);
 
         //multiple offsets are exposed by the mov byte ptr into rax, just like before.
         log_search("mov byte ptr [rax + 0x??], ...");
         const auto allMovBytePtr = instructionList.GetAllInstructionsWhichMatch("mov", "byte ptr [rax", true);
-        const ClosureField fields[5] = {ClosureField::tt, ClosureField::marked, ClosureField::memcat, ClosureField::nupvalues, ClosureField::isC};
+        constexpr ClosureField fields[4] = {ClosureField::tt, ClosureField::marked, ClosureField::memcat, ClosureField::nupvalues};
 
-        for (int i = 0; i < 5; ++i) {
+        for (int i = 0; i < 4; ++i) {
             const ClosureField field = fields[i];
             const AsmInstruction* ins = allMovBytePtr[i];
 

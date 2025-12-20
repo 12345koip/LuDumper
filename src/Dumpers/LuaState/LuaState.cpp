@@ -22,6 +22,7 @@ void LuaStateDumper::Scan() {
     const auto luaV_gettable_signature = hat::parse_signature(luaV_gettable).value();
     const auto luaD_call_signature = hat::parse_signature(luaD_call).value();
     const auto luaD_reallocstack_signature = hat::parse_signature(luaD_reallocstack).value();
+    const auto currfuncname_signature = hat::parse_signature(currfuncname).value();
 
 
     { //stack_init
@@ -254,6 +255,36 @@ void LuaStateDumper::Scan() {
 
     }
 
+    { //currfuncname
+        puts("Scanning for currfuncname...");
+
+        //get currfuncname disasm.
+        auto currfuncname_match = hat::find_pattern(currfuncname_signature, ".text");
+        if (!currfuncname_match.has_result()) fail("currfuncname");
+
+        printf("currfuncname @ %p\n", currfuncname_match.get());
+
+        //bounds of function
+        uint8_t* start = reinterpret_cast<uint8_t*>(currfuncname_match.get());
+        uint8_t* end = reinterpret_cast<uint8_t*>(
+            reinterpret_cast<uintptr_t>(start) + 0x195
+        );
+
+        const auto instructionList = *Dissassembler.Dissassemble(start, end, true);
+
+        //the first call is to strcmp, and the first mov of a qword ptr after that is the base of L->namecall.
+        const auto firstCall = instructionList.GetInstructionWhichMatches("call", "", true);
+        const auto firstCallPos = instructionList.GetInstructionPosition(*firstCall);
+
+        const auto namecallIns = std::ranges::find_if(firstCallPos, instructionList.end(), [](const auto& ins) -> bool {
+            return ins.id == X86_INS_MOV && ins.operands.find(", qword ptr [") != std::string::npos;
+        });
+
+        LUDUMP_ASSERT(namecallIns != instructionList.end(), "failed to find instruction exposing namecall");
+        const auto namecallOffset = namecallIns->detail[1]->disp;
+        log_offset(LuaStateFieldToString(LuaStateField::namecall), namecallOffset);
+        this->offsets.emplace_back(LuaStateField::namecall, namecallOffset);
+    }
 
     { //luaE_newthread
         puts("Scanning for luaE_newthread...");
@@ -319,30 +350,29 @@ void LuaStateDumper::Scan() {
 
 
 
-        //there's now only two fields left: userdata and namecall.
+        //there's now only one field left: userdata.
         //we'll walk all the instructions which mov into L in the
         //inlined preinit_state and see which we don't have.
-        std::array<const AsmInstruction*, 2> remaining = {nullptr, nullptr};
+        const AsmInstruction* userdataIns = nullptr;
 
         for (const auto& i: allMovQRbx) {
-            auto existing = std::find_if(this->offsets.begin(), this->offsets.end(), [&](const std::pair<LuaStateField, ptrdiff_t>& pair) -> bool {
-                return pair.second == i->detail[0]->disp;
-            });
+            bool alreadyKnown = std::ranges::any_of(
+                this->offsets.begin(),
+                this->offsets.end(),
+                [&](const std::pair<LuaStateField, ptrdiff_t>& pair) -> bool {
+                    return pair.second == i->detail[0]->disp;
+                }
+            );
 
-            if (existing == this->offsets.end())
-                remaining[remaining[0] == nullptr? 0: 1] = &(*i);
+            if (!alreadyKnown) {
+                userdataIns = &(*i);
+                break;
+            }
         }
 
-        LUDUMP_ASSERT(remaining[0] != nullptr, "namecall retrieval failed");
-        LUDUMP_ASSERT(remaining[1] != nullptr, "userdata retrieval failed");
+        LUDUMP_ASSERT(userdataIns != nullptr, "userdata retrieval failed");
 
-        const auto* namecallIns = remaining[0];
-        const auto namecallOffset = namecallIns->detail[0]->disp;
-        log_offset(LuaStateFieldToString(LuaStateField::namecall), namecallOffset);
-        this->offsets.emplace_back(LuaStateField::namecall, namecallOffset);
-
-        const auto* userdataIns = remaining[1];
-        const auto userdataOffset = userdataIns->detail[0]->disp;
+        const ptrdiff_t userdataOffset = userdataIns->detail[0]->disp;
         log_offset(LuaStateFieldToString(LuaStateField::userdata), userdataOffset);
         this->offsets.emplace_back(LuaStateField::userdata, userdataOffset);
     }

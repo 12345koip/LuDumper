@@ -20,7 +20,7 @@ See LICENSE and README for details.
 #define TAB_INDENT "   "
 
 //forward declarations.
-#define FORWARD_TVALUE "struct TValue;"
+#define FORWARD_TVALUE "struct lua_TValue;"
 #define FORWARD_GLOBAL_STATE "struct global_State;"
 #define FORWARD_CALL_INFO "struct CallInfo;"
 #define FORWARD_TSTRING "struct TString;"
@@ -31,10 +31,15 @@ See LICENSE and README for details.
 #define FORWARD_VALUE "union Value;"
 #define FORWARD_LBUFFER "struct LuauBuffer;"
 #define FORWARD_PROTO "struct Proto;"
+#define FORWARD_STRINGTABLE "struct stringtable;"
+#define FORWARD_CB "struct lua_Callbacks;"
+#define FORWARD_ECB "struct lua_Callbacks;"
+#define FORWARD_LDEBUG "struct lua_Debug;"
+#define FORWARD_LUA_PAGE "struct lua_Page;"
 
 //typedefs.
-#define STKID_TYPEDEF "typedef TValue* StkId;"
-#define REMOVE_STRUCT_PREF "typedef struct TValue TValue;\ntypedef struct global_State global_State;\ntypedef struct UpVal UpVal;\ntypedef struct LuaTable LuaTable;\ntypedef struct CallInfo CallInfo;\ntypedef struct TString TString;\ntypedef struct lua_State lua_State;\ntypedef union GCObject GCObject;\ntypedef union Value Value;\ntypedef struct LuauBuffer LuauBuffer;\ntypedef struct Proto Proto;"
+#define STKID_TYPEDEF "typedef lua_TValue* StkId;"
+#define REMOVE_STRUCT_PREF "typedef struct lua_TValue TValue;\ntypedef struct global_State global_State;\ntypedef struct UpVal UpVal;\ntypedef struct LuaTable LuaTable;\ntypedef struct CallInfo CallInfo;\ntypedef struct TString TString;\ntypedef struct lua_State lua_State;\ntypedef union GCObject GCObject;\ntypedef union Value Value;\ntypedef struct LuauBuffer LuauBuffer;\ntypedef struct Proto Proto;\ntypedef struct stringtable stringtable;\ntypedef struct lua_Callbacks lua_Callbacks;\ntypedef struct lua_ExecutionCallbacks lua_ExecutionCallbacks;\ntypedef struct lua_Debug lua_Debug;\ntypedef struct lua_Page lua_Page;\n"
 #define BUFFER_TYPEDEF "typedef struct LuauBuffer Buffer;"
 #define FUNC_TYPEDEFS "typedef int (*lua_CFunction)(lua_State *L);\ntypedef int (*lua_Continuation)(lua_State *L, int status);"
 

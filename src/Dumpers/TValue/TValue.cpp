@@ -96,7 +96,7 @@ std::string TValueDumper::ToHeaderContents() {
     });
 
     std::ostringstream buf {};
-    buf << "struct TValue {" << NEWLINE;
+    buf << "struct lua_TValue {" << NEWLINE;
 
     for (const auto& [key, offset]: this->offsets) {
         const char* type = typesMap.at(key);
